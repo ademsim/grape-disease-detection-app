@@ -1,28 +1,34 @@
-import streamlit as st
 import os
-import keras
-import torch
-from PIL import Image
-import numpy as np
-
-# Keras 3 backend'ini PyTorch olarak ayarlıyoruz (TensorFlow çakışmasını önler)
+# Keras için PyTorch backend ayarı (Çakışmaları önler)
 os.environ["KERAS_BACKEND"] = "torch"
 
-# 1. Model Yükleme
+import streamlit as st
+import gdown
+import keras
+import numpy as np
+from PIL import Image
+
+# Google Drive'daki modelinizin File ID'sini buraya yapıştırın
+FILE_ID = 'BURAYA_GOOGLE_DRIVE_DOSYA_ID_YAZINIZ'
+MODEL_PATH = 'grape_disease_detection_model.keras'
+
 @st.cache_resource
-def load_prediction_model():
-    # Eğer modeliniz torch formatındaysa veya Keras 3 ile PyTorch backend'de kaydedildiyse
-    # Model yükleme işlemini buraya göre yapılandırıyoruz.
-    model_path = 'grape_disease_detection_model.keras' # veya .h5 / .pt
-    if os.path.exists(model_path):
-        model = keras.models.load_model(model_path)
-        return model
-    else:
-        return None
+def load_my_model():
+    if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1000:
+        if os.path.exists(MODEL_PATH):
+            os.remove(MODEL_PATH)
+            
+        with st.spinner("Downloading model from Google Drive, please wait..."):
+            url = f'https://drive.google.com/uc?id={FILE_ID}'
+            gdown.download(url, MODEL_PATH, quiet=False)
+            
+    return keras.models.load_model(MODEL_PATH)
 
-model = load_prediction_model()
+# Modeli yükle
+with st.spinner("Preparing the model, please wait..."):
+    model = load_my_model()
 
-# Sınıf İsimleri
+# Sınıf İsimleri (Eğitim sırasıyla birebir aynı olmalı)
 class_labels = [
     'Grape___Black_rot',
     'Grape___Esca_(Black_Measles)',
@@ -30,35 +36,51 @@ class_labels = [
     'Grape___healthy'
 ]
 
-st.title("🍇 Grape Leaf Disease Detection")
-st.write("This application detects diseases in grape leaves using CNN & PyTorch/Keras 3.")
+# --- ARAYÜZ VE ANALİZ KISMI ---
 
-uploaded_file = st.file_uploader("Choose a leaf image (.jpg, .png)...", type=["jpg", "jpeg", "png"])
+st.title("🍇 Grape Leaf Disease Detection")
+st.write("Please upload a grape leaf photo to detect diseases.")
+
+# Dosya yükleme bileşeni
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
+    # Resmi ekranda göster
     image = Image.open(uploaded_file)
-    st.image(image, caption='Uploaded Leaf', use_column_width=True)
+    st.image(image, caption="Uploaded Leaf", use_container_width=True)
     
-    # Görüntüyü modele uygun boyuta getirme
-    image = image.resize((170, 170))
-    img_array = np.array(image) / 255.0
-    
-    if img_array.shape[-1] == 4:
-        img_array = img_array[:, :, :3]
-        
-    img_array = np.expand_dims(img_array, axis=0)
-    
-    if st.button('Predict Disease'):
-        if model is not None:
-            with st.spinner('Model is analyzing...'):
-                # Tahmin aşaması
+    if st.button("Predict Disease"):
+        with st.spinner("Model is analyzing the image..."):
+            try:
+                # RGBA veya farklı formatları standart RGB'ye çevir
+                image = image.convert("RGB")
+                
+                # Modelin beklediği giriş boyutu (170x170)
+                img = image.resize((170, 170)) 
+                img_array = np.array(img, dtype=np.float32) / 255.0  # Normalizasyon
+                
+                # Batch boyutu ekle (1, 170, 170, 3)
+                img_array = np.expand_dims(img_array, axis=0) 
+                
+                # Tahmin yapma (4 sınıf için softmax çıktıları döner)
                 predictions = model.predict(img_array)
                 predicted_class_idx = np.argmax(predictions[0])
-                confidence = np.max(predictions[0]) * 100
+                confidence = float(np.max(predictions[0])) * 100
                 
                 predicted_label = class_labels[predicted_class_idx]
                 
-            st.success(f"Result: **{predicted_label}**")
-            st.info(f"Confidence: **%{confidence:.2f}**")
-        else:
-            st.error("Model dosyası bulunamadı! Lütfen model dosyasını repoya ekleyin.")
+                st.success("Analysis Complete!")
+                
+                # Sonucu ekrana yazdır
+                if predicted_label == 'Grape___healthy':
+                    st.success(f"Result: **{predicted_label}** - Confidence: %{confidence:.2f}")
+                else:
+                    st.error(f"Result: **{predicted_label}** - Confidence: %{confidence:.2f}")
+                
+                # İsteğe bağlı tüm olasılıkları görmek için
+                with st.expander("See all class probabilities"):
+                    for idx, label in enumerate(class_labels):
+                        st.write(f"{label}: %{predictions[0][idx]*100:.2f}")
+                
+            except Exception as e:
+                st.error(f"An error occurred during analysis: {e}")
