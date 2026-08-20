@@ -18,3 +18,14 @@ Grapevine diseases pose a severe threat to agricultural yields. This project dev
    ```bash
    git clone <repository-url>
    cd <repository-folder>
+
+1. Install the required dependencies:
+pip install streamlit tensorflow keras gdown numpy pillow torch
+
+2. Run the Streamlit app:
+streamlit run app.py
+
+Author
+Adem Şimşek
+
+
