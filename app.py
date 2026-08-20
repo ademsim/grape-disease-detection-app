@@ -8,7 +8,7 @@ import keras
 import numpy as np
 from PIL import Image
 
-# Google Drive file ID for your trained model
+# Google Drive file ID
 FILE_ID = '1Clk2DGtaJlX9R-bllG0g42qgv-Is8eRP'
 MODEL_PATH = 'grape_disease_vgg16_model.keras'
 
@@ -36,7 +36,7 @@ class_labels = [
     'Grape___healthy'
 ]
 
-# --- USER INTERFACE & PREDICTION LOGIC ---
+# User Interface
 
 st.title("🍇 Grape Leaf Disease Detection")
 st.write("Please upload a grape leaf photo to detect diseases.")
@@ -52,10 +52,10 @@ if uploaded_file is not None:
     if st.button("Predict Disease"):
         with st.spinner("Model is analyzing the image..."):
             try:
-                # Convert image to RGB format (handles RGBA / transparency channels)
+                # Convert image to RGB format 
                 image = image.convert("RGB")
                 
-                # FIXED: Resize image to match model's expected input shape (224x224)
+                # Resize image to match model's expected input shape (224x224)
                 img = image.resize((224, 224)) 
                 img_array = np.array(img, dtype=np.float32) / 255.0  # Normalization
                 
