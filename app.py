@@ -9,8 +9,8 @@ import numpy as np
 from PIL import Image
 
 # Google Drive file ID
-FILE_ID = '11VvGlCvHUijjZgxFbsI16Yt0cndQiIXP'
-MODEL_PATH = 'grape_disease_detection_model.keras'
+FILE_ID = '1Clk2DGtaJlX9R-bllG0g42qgv-Is8eRP'
+MODEL_PATH = 'grape_disease_vgg16_model.keras'
 
 @st.cache_resource
 def load_my_model():
