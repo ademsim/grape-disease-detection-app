@@ -27,7 +27,6 @@ Grapevine diseases pose a severe threat to agricultural yields. This project dev
    ```bash
    streamlit run app.py
 
-Author
-Adem Şimşek
+Author: Adem Şimşek
 
 
