@@ -8,8 +8,8 @@ import keras
 import numpy as np
 from PIL import Image
 
-# Google Drive'daki modelinizin File ID'sini buraya yapıştırın
-FILE_ID = 'BURAYA_GOOGLE_DRIVE_DOSYA_ID_YAZINIZ'
+# Google Drive file ID
+FILE_ID = '11VvGlCvHUijjZgxFbsI16Yt0cndQiIXP'
 MODEL_PATH = 'grape_disease_detection_model.keras'
 
 @st.cache_resource
