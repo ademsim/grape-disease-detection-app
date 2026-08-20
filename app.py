@@ -1,18 +1,19 @@
 import streamlit as st
-import tensorflow as tf
+import keras
 from tensorflow.keras.models import load_model
 from PIL import Image
 import numpy as np
 
-# 1. Load Model (Caching for optimization)
+# 1. Model Yükleme
 @st.cache_resource
 def load_prediction_model():
+    # .keras veya .h5 modelinizi doğrudan Keras 3 ile yüklüyoruz
     model = load_model('grape_disease_detection_model.keras')
     return model
 
 model = load_prediction_model()
 
-# Class Labels (Must match the training order)
+# Sınıf İsimleri
 class_labels = [
     'Grape___Black_rot',
     'Grape___Esca_(Black_Measles)',
@@ -23,25 +24,20 @@ class_labels = [
 st.title("🍇 Grape Leaf Disease Detection")
 st.write("This application detects diseases in grape leaves using a CNN model.")
 
-# 2. File Uploader Interface
 uploaded_file = st.file_uploader("Choose a leaf image (.jpg, .png)...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # Display uploaded image
     image = Image.open(uploaded_file)
     st.image(image, caption='Uploaded Leaf', use_column_width=True)
     
-    # 3. Preprocess Image
     image = image.resize((170, 170))
     img_array = np.array(image) / 255.0
     
-    # Convert RGBA to RGB if necessary
     if img_array.shape[-1] == 4:
         img_array = img_array[:, :, :3]
         
-    img_array = np.expand_dims(img_array, axis=0) # Reshape to (1, 170, 170, 3)
+    img_array = np.expand_dims(img_array, axis=0)
     
-    # 4. Make Prediction
     if st.button('Predict Disease'):
         with st.spinner('Model is analyzing...'):
             predictions = model.predict(img_array)
