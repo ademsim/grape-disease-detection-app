@@ -1,5 +1,5 @@
 import os
-# Keras için PyTorch backend ayarı (Çakışmaları önler)
+# Set Keras backend to PyTorch to avoid conflicts
 os.environ["KERAS_BACKEND"] = "torch"
 
 import streamlit as st
@@ -8,7 +8,7 @@ import keras
 import numpy as np
 from PIL import Image
 
-# Google Drive file ID
+# Google Drive file ID for your trained model
 FILE_ID = '1Clk2DGtaJlX9R-bllG0g42qgv-Is8eRP'
 MODEL_PATH = 'grape_disease_vgg16_model.keras'
 
@@ -24,11 +24,11 @@ def load_my_model():
             
     return keras.models.load_model(MODEL_PATH)
 
-# Modeli yükle
+# Load the model
 with st.spinner("Preparing the model, please wait..."):
     model = load_my_model()
 
-# Sınıf İsimleri (Eğitim sırasıyla birebir aynı olmalı)
+# Class labels (Must match the exact order used during training)
 class_labels = [
     'Grape___Black_rot',
     'Grape___Esca_(Black_Measles)',
@@ -36,33 +36,33 @@ class_labels = [
     'Grape___healthy'
 ]
 
-# --- ARAYÜZ VE ANALİZ KISMI ---
+# --- USER INTERFACE & PREDICTION LOGIC ---
 
 st.title("🍇 Grape Leaf Disease Detection")
 st.write("Please upload a grape leaf photo to detect diseases.")
 
-# Dosya yükleme bileşeni
+# File uploader component
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # Resmi ekranda göster
+    # Display the uploaded image
     image = Image.open(uploaded_file)
     st.image(image, caption="Uploaded Leaf", use_container_width=True)
     
     if st.button("Predict Disease"):
         with st.spinner("Model is analyzing the image..."):
             try:
-                # RGBA veya farklı formatları standart RGB'ye çevir
+                # Convert image to RGB format (handles RGBA / transparency channels)
                 image = image.convert("RGB")
                 
-                # Modelin beklediği giriş boyutu (170x170)
-                img = image.resize((170, 170)) 
-                img_array = np.array(img, dtype=np.float32) / 255.0  # Normalizasyon
+                # FIXED: Resize image to match model's expected input shape (224x224)
+                img = image.resize((224, 224)) 
+                img_array = np.array(img, dtype=np.float32) / 255.0  # Normalization
                 
-                # Batch boyutu ekle (1, 170, 170, 3)
+                # Add batch dimension to match expected shape: (1, 224, 224, 3)
                 img_array = np.expand_dims(img_array, axis=0) 
                 
-                # Tahmin yapma (4 sınıf için softmax çıktıları döner)
+                # Perform prediction
                 predictions = model.predict(img_array)
                 predicted_class_idx = np.argmax(predictions[0])
                 confidence = float(np.max(predictions[0])) * 100
@@ -71,16 +71,16 @@ if uploaded_file is not None:
                 
                 st.success("Analysis Complete!")
                 
-                # Sonucu ekrana yazdır
+                # Display the result
                 if predicted_label == 'Grape___healthy':
-                    st.success(f"Result: **{predicted_label}** - Confidence: %{confidence:.2f}")
+                    st.success(f"Result: **{predicted_label}** - Confidence: {confidence:.2f}%")
                 else:
-                    st.error(f"Result: **{predicted_label}** - Confidence: %{confidence:.2f}")
+                    st.error(f"Result: **{predicted_label}** - Confidence: {confidence:.2f}%")
                 
-                # İsteğe bağlı tüm olasılıkları görmek için
+                # Expandable view for all class probabilities
                 with st.expander("See all class probabilities"):
                     for idx, label in enumerate(class_labels):
-                        st.write(f"{label}: %{predictions[0][idx]*100:.2f}")
+                        st.write(f"{label}: {predictions[0][idx]*100:.2f}%")
                 
             except Exception as e:
                 st.error(f"An error occurred during analysis: {e}")
